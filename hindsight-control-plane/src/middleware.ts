@@ -21,8 +21,8 @@ export async function middleware(request: NextRequest) {
 }
 
 async function handleSaasRequest(request: NextRequest) {
-  const managerApiUrl = process.env.MANAGER_API_URL || "http://localhost:8001";
-  const saasHostUrl = process.env.SAAS_HOST_URL || "http://localhost:3000";
+  const managerApiUrl = process.env.HINDSIGHT_CP_MANAGER_API_URL || "http://localhost:8001";
+  const saasHostUrl = process.env.HINDSIGHT_CP_SAAS_HOST_URL || "http://localhost:3000";
   const { pathname, searchParams } = request.nextUrl;
 
   // Handle OTP exchange
