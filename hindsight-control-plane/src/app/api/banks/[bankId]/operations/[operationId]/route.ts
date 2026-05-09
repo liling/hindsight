@@ -55,7 +55,7 @@ export async function POST(
     const url = dataplaneBankUrl(bankId, `/operations/${encodeURIComponent(operationId)}/retry`);
     const response = await fetch(url, {
       method: "POST",
-      headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+      headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
     });
 
     const data = await response.json();

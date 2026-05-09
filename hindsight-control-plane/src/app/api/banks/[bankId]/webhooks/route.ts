@@ -4,7 +4,7 @@ import { dataplaneBankUrl, getDataplaneHeaders } from "@/lib/hindsight-client";
 export async function GET(request: Request, { params }: { params: Promise<{ bankId: string }> }) {
   const { bankId } = await params;
   const res = await fetch(dataplaneBankUrl(bankId, "/webhooks"), {
-    headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+    headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
   });
   const data = await res.json();
   if (!res.ok) return NextResponse.json({ error: data.detail || "Failed" }, { status: res.status });
@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ban
   const body = await request.json();
   const res = await fetch(dataplaneBankUrl(bankId, "/webhooks"), {
     method: "POST",
-    headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+    headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   const data = await res.json();

@@ -18,7 +18,7 @@ export async function GET(
       dataplaneBankUrl(bankId, `/memories/${encodeURIComponent(memoryId)}`),
       {
         method: "GET",
-        headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+        headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
       }
     );
 

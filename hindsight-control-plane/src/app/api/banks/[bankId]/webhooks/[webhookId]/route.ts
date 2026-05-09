@@ -9,7 +9,7 @@ export async function PATCH(
   const body = await request.json();
   const res = await fetch(dataplaneBankUrl(bankId, `/webhooks/${encodeURIComponent(webhookId)}`), {
     method: "PATCH",
-    headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+    headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   const data = await res.json();
@@ -24,7 +24,7 @@ export async function DELETE(
   const { bankId, webhookId } = await params;
   const res = await fetch(dataplaneBankUrl(bankId, `/webhooks/${encodeURIComponent(webhookId)}`), {
     method: "DELETE",
-    headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+    headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
   });
   const data = await res.json();
   if (!res.ok) return NextResponse.json({ error: data.detail || "Failed" }, { status: res.status });

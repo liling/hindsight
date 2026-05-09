@@ -44,7 +44,7 @@ export async function PATCH(
       dataplaneBankUrl(bankId, `/documents/${encodeURIComponent(documentId)}`),
       {
         method: "PATCH",
-        headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+        headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       }
     );
