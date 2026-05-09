@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   distDir,
   basePath: basePath,
   assetPrefix: basePath,
+  allowedDevOrigins: ['*.cp.local.mem99.cn'],
   // Disable request logging in production
   logging: false,
   // Set the monorepo root explicitly to avoid detecting wrong lockfiles in parent directories

@@ -1,57 +1,85 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const ACCESS_KEY_COOKIE = "hindsight_cp_access";
+const COOKIE_MAX_AGE = 900;
 
-// Routes that don't require authentication
-const PUBLIC_PATTERNS = [
-  "/login",
-  "/api/auth/",
-  "/api/health",
-  "/api/version",
-  "/logo.png",
-  "/favicon",
-  "/_next",
-  "/fonts",
-  "/static",
-];
+function extractTenantSlug(hostname: string): string | null {
+  const hostWithoutPort = hostname.split(":")[0];
+  const parts = hostWithoutPort.split(".cp.");
+  if (parts.length < 2) return null;
+  return parts[0];
+}
 
-export function middleware(request: NextRequest) {
-  const accessKey = process.env.HINDSIGHT_CP_ACCESS_KEY;
+export async function middleware(request: NextRequest) {
+  const hostname = request.headers.get("host") || "";
+  const tenantSlug = extractTenantSlug(hostname);
 
-  // If no access key is configured, skip auth entirely
-  if (!accessKey) {
+  if (!tenantSlug) {
     return NextResponse.next();
   }
 
-  const { pathname } = request.nextUrl;
+  return await handleSaasRequest(request);
+}
 
-  // Check if this path is public
-  const isPublic = PUBLIC_PATTERNS.some((pattern) => pathname.startsWith(pattern));
+async function handleSaasRequest(request: NextRequest) {
+  const managerApiUrl = process.env.MANAGER_API_URL || "http://localhost:8001";
+  const saasHostUrl = process.env.SAAS_HOST_URL || "http://localhost:3000";
+  const { pathname, searchParams } = request.nextUrl;
 
-  if (isPublic) {
-    return NextResponse.next();
-  }
+  // Handle OTP exchange
+  const otp = searchParams.get("otp");
+  if (otp) {
+    try {
+      const resp = await fetch(`${managerApiUrl}/auth/exchange-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp }),
+      });
 
-  // Check for the session cookie
-  const isAuthenticated = request.cookies.has(ACCESS_KEY_COOKIE);
+      if (!resp.ok) {
+        return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+      }
 
-  if (!isAuthenticated) {
-    // For API routes, return 401 JSON instead of redirecting to HTML login page
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const data = await resp.json();
+
+      const proto = request.headers.get("x-forwarded-proto") || "http";
+      const host = request.headers.get("host") || "";
+      const targetPath = pathname === "/" ? "/dashboard" : pathname;
+      const targetUrl = new URL(targetPath, `${proto}://${host}`);
+
+      const response = NextResponse.redirect(targetUrl);
+      response.cookies.set("session-jwt", data.jwt, {
+        path: "/",
+        maxAge: COOKIE_MAX_AGE,
+        sameSite: "lax",
+        httpOnly: true,
+      });
+      response.cookies.set("tenant-api-key", data.api_key, {
+        path: "/",
+        maxAge: COOKIE_MAX_AGE,
+        sameSite: "lax",
+        httpOnly: true,
+      });
+      return response;
+    } catch {
+      return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
     }
-
-    // Redirect to login page
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("returnTo", pathname);
-    return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  // Validate existing session
+  const jwt = request.cookies.get("session-jwt");
+  if (!jwt) {
+    return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+  }
+
+  // Inject tenant API key as request header so downstream API routes can use it
+  const apiKey = request.cookies.get("tenant-api-key")?.value;
+  const response = NextResponse.next();
+  if (apiKey) {
+    response.headers.set("x-api-key", apiKey);
+  }
+  return response;
 }
 
 export const config = {
-  // Match all routes
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
