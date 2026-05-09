@@ -28,10 +28,10 @@ export async function POST(
       mode
         ? {
             method: "POST",
-            headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+            headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({ mode }),
           }
-        : { method: "POST", headers: getDataplaneHeaders() }
+        : { method: "POST", headers: await getDataplaneHeaders() }
     );
 
     if (!response.ok) {

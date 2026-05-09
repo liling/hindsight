@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
   distDir,
   basePath: basePath,
   assetPrefix: basePath,
+  allowedDevOrigins: ['*.cp.local.mem99.cn'],
   // Disable request logging in production
   logging: false,
   experimental: {

@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     // Forward the browser's abort: when the user leaves a tab, its graph read
     // stops here and at the dataplane instead of finishing for nobody.
     const response = await fetch(`${DATAPLANE_URL}/v1/default/banks/${bankId}/graph?${params}`, {
-      headers: getDataplaneHeaders(),
+      headers: await getDataplaneHeaders(),
       signal: request.signal,
     });
 
