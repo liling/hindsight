@@ -10,6 +10,7 @@ is installed alongside the server.
 Available built-in extensions:
     - ApiKeyTenantExtension: Simple API key validation with public schema
     - MemoryDefenseRegexExtension: Regex-based memory defense policies
+    - ManagerTenantExtension: Multi-tenant API key validation via hindsight-manager
 
 Concrete classes are deliberately not re-exported from
 ``hindsight_api.extensions``: extensions are resolved by import path at load
@@ -18,12 +19,15 @@ its dependencies) part of the core import graph.
 
 Example usage:
     HINDSIGHT_API_TENANT_EXTENSION=hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension
+    HINDSIGHT_API_TENANT_EXTENSION=hindsight_api.extensions.builtin.manager_tenant:ManagerTenantExtension
 """
 
+from hindsight_api.extensions.builtin.manager_tenant import ManagerTenantExtension
 from hindsight_api.extensions.builtin.memory_defense_regex import MemoryDefenseRegexExtension
 from hindsight_api.extensions.builtin.tenant import ApiKeyTenantExtension
 
 __all__ = [
     "ApiKeyTenantExtension",
+    "ManagerTenantExtension",
     "MemoryDefenseRegexExtension",
 ]
