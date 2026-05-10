@@ -22,7 +22,9 @@ const DATAPLANE_API_KEY = process.env.HINDSIGHT_CP_DATAPLANE_API_KEY || "";
 const requestAwareFetch: typeof fetch = async (input, init) => {
   const apiKey = await getActiveApiKey();
 
-  const newHeaders = new Headers(init?.headers as Record<string, string> | Headers | undefined);
+  // input may be a Request object (from the SDK), which already has headers set
+  const baseHeaders = input instanceof Request ? input.headers : init?.headers;
+  const newHeaders = new Headers(baseHeaders);
   if (apiKey) newHeaders.set("Authorization", `Bearer ${apiKey}`);
 
   return globalThis.fetch(input, { ...init, headers: newHeaders });
