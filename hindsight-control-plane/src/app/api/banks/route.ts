@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     if (response.error) {
       console.error("API error creating bank:", response.error);
-      const status = response.error.status || 502;
+      const status = (response.error as any).status || 502;
       const message =
         (response.error as any).detail || (response.error as any).message || "API error";
       return NextResponse.json({ error: message }, { status });
