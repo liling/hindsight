@@ -47,7 +47,9 @@ async function getActiveApiKey(): Promise<string> {
 /**
  * Auth headers for direct fetch calls to the dataplane API.
  */
-export async function getDataplaneHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
+export async function getDataplaneHeaders(
+  extra?: Record<string, string>
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = { ...extra };
   const apiKey = await getActiveApiKey();
   if (apiKey) {

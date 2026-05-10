@@ -68,7 +68,9 @@
     ".next-55993/types/**/*.ts",
     ".next-55993/dev/types/**/*.ts",
     ".next-9996/types/**/*.ts",
-    ".next-9996/dev/types/**/*.ts"
+    ".next-9996/dev/types/**/*.ts",
+    ".next-9995/types/**/*.ts",
+    ".next-9995/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
