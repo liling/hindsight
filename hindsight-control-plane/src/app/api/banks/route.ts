@@ -33,8 +33,11 @@ export async function POST(request: Request) {
       body: {},
     });
 
-    const serializedData = JSON.parse(JSON.stringify(response.data));
-    return NextResponse.json(serializedData, { status: 201 });
+    const data = response.data;
+    if (!data) {
+      return NextResponse.json({ error: "No data returned from API" }, { status: 502 });
+    }
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("Error creating bank:", error);
     return NextResponse.json({ error: "Failed to create bank" }, { status: 500 });
