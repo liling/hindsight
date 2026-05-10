@@ -33,6 +33,13 @@ export async function POST(request: Request) {
       body: {},
     });
 
+    if (response.error) {
+      console.error("API error creating bank:", response.error);
+      const status = response.error.status || 502;
+      const message = (response.error as any).detail || (response.error as any).message || "API error";
+      return NextResponse.json({ error: message }, { status });
+    }
+
     const data = response.data;
     if (!data) {
       return NextResponse.json({ error: "No data returned from API" }, { status: 502 });

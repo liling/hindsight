@@ -73,11 +73,13 @@ async function handleSaasRequest(request: NextRequest) {
 
   // Inject tenant API key as request header so downstream API routes can use it
   const apiKey = request.cookies.get("tenant-api-key")?.value;
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
   if (apiKey) {
-    response.headers.set("x-api-key", apiKey);
+    requestHeaders.set("x-api-key", apiKey);
   }
-  return response;
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {
