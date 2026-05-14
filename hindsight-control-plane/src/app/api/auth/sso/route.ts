@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!otp) {
-    return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+    return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
   }
 
   try {
@@ -33,17 +33,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (!resp.ok) {
-      return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+      return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
     }
 
     const data = await resp.json();
 
-    // Use the request's own host to determine the tenant redirect target
     const proto = request.headers.get("x-forwarded-proto") || "http";
     const host = request.headers.get("host") || "";
     const targetUrl = new URL("/dashboard", `${proto}://${host}`);
 
-    const response = NextResponse.redirect(targetUrl);
+    const response = NextResponse.redirect(targetUrl, 303);
     response.cookies.set("session-jwt", data.jwt, {
       path: "/",
       maxAge: COOKIE_MAX_AGE,
@@ -57,7 +56,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
     });
     return response;
-  } catch {
-    return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+  } catch (err) {
+    console.error("[SSO] OTP exchange failed:", err);
+    return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
   }
 }
