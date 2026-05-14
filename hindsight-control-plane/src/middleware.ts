@@ -102,6 +102,11 @@ export async function middleware(request: NextRequest) {
 }
 
 async function handleSaasRequest(request: NextRequest) {
+  // Allow SSO OTP exchange route to pass through without session check
+  if (request.nextUrl.pathname === "/api/auth/sso") {
+    return NextResponse.next();
+  }
+
   // Validate existing session
   const jwt = request.cookies.get("session-jwt");
   if (!jwt) {
