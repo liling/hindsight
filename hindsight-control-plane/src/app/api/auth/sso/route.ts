@@ -38,17 +38,10 @@ export async function POST(request: NextRequest) {
 
     const data = await resp.json();
 
-    // Use Referer header to determine the tenant host for redirect
-    const referer = request.headers.get("referer") || "";
+    // Use the request's own host to determine the tenant redirect target
     const proto = request.headers.get("x-forwarded-proto") || "http";
     const host = request.headers.get("host") || "";
-
-    let targetUrl: URL;
-    if (referer) {
-      targetUrl = new URL("/dashboard", referer);
-    } else {
-      targetUrl = new URL("/dashboard", `${proto}://${host}`);
-    }
+    const targetUrl = new URL("/dashboard", `${proto}://${host}`);
 
     const response = NextResponse.redirect(targetUrl);
     response.cookies.set("session-jwt", data.jwt, {
