@@ -348,6 +348,13 @@ class PostgreSQLDialect(SQLDialect):
             f" LIMIT {fetch_limit})"
         )
 
+    @staticmethod
+    def _qualified_index_name(table: str, index_name: str) -> str:
+        if "." in table:
+            schema = table.rsplit(".", 1)[0]
+            return f"{schema}.{index_name}"
+        return index_name
+
     def build_bm25_arm(
         self,
         *,
@@ -374,10 +381,11 @@ class PostgreSQLDialect(SQLDialect):
         # outer wrapper below instead.
         floor_in_where = False
 
+        idx = self._qualified_index_name(table, "idx_memory_units_text_search")
         if text_search_extension == "vchord":
             # <&> returns the NEGATIVE BM25 score (lower = more relevant), negate
             # for a positive score where higher = more relevant.
-            bm25_score_expr = f"-(search_vector <&> to_bm25query('idx_memory_units_text_search', tokenize({text_param}, 'llmlingua2')))"
+            bm25_score_expr = f"-(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2')))"
             bm25_order_by = f"{bm25_score_expr} DESC"
             # Unlike native tsvector (which has a boolean `@@` match gate), the
             # VectorChord operator ranks *every* document, so a bare ORDER BY ...
@@ -389,8 +397,8 @@ class PostgreSQLDialect(SQLDialect):
             bm25_where_filter = f"AND {bm25_score_expr} {bm25_score_gate(bm25_min_score)}"
             floor_in_where = True
         elif text_search_extension == "pg_textsearch":
-            bm25_score_expr = f"-(text <@> to_bm25query({text_param}, 'idx_memory_units_text_search'))"
-            bm25_order_by = f"text <@> to_bm25query({text_param}, 'idx_memory_units_text_search') ASC"
+            bm25_score_expr = f"-(text <@> to_bm25query({text_param}, '{idx}'))"
+            bm25_order_by = f"text <@> to_bm25query({text_param}, '{idx}') ASC"
             bm25_where_filter = ""
         elif text_search_extension == "pgroonga":
             # &@~ accepts pgroonga's query syntax. Tokenize the raw query with
