@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   basePath: basePath,
   assetPrefix: basePath,
   allowedDevOrigins: ['*.cp.local.mem99.cn'],
-  logging: true,
+  logging: false,
   // Set the monorepo root explicitly to avoid detecting wrong lockfiles in parent directories
   turbopack: {
     root: path.resolve(__dirname, '..'),
