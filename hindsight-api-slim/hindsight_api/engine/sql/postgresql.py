@@ -169,6 +169,13 @@ class PostgreSQLDialect(SQLDialect):
             f" LIMIT {fetch_limit})"
         )
 
+    @staticmethod
+    def _qualified_index_name(table: str, index_name: str) -> str:
+        if "." in table:
+            schema = table.rsplit(".", 1)[0]
+            return f"{schema}.{index_name}"
+        return index_name
+
     def build_bm25_arm(
         self,
         *,
@@ -184,14 +191,15 @@ class PostgreSQLDialect(SQLDialect):
         text_search_extension: str = "native",
         extra_where: str = "",
     ) -> str:
+        idx = self._qualified_index_name(table, "idx_memory_units_text_search")
         if text_search_extension == "vchord":
             # <&> returns a distance (lower = more relevant), negate for score
-            bm25_score_expr = f"-(search_vector <&> to_bm25query('idx_memory_units_text_search', tokenize({text_param}, 'llmlingua2')))"
+            bm25_score_expr = f"-(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2')))"
             bm25_order_by = f"{bm25_score_expr} DESC"
             bm25_where_filter = ""
         elif text_search_extension == "pg_textsearch":
-            bm25_score_expr = f"-({text_param} <@> to_bm25query({text_param}, 'idx_memory_units_text_search'))"
-            bm25_order_by = f"text <@> to_bm25query({text_param}, 'idx_memory_units_text_search') ASC"
+            bm25_score_expr = f"-({text_param} <@> to_bm25query({text_param}, '{idx}'))"
+            bm25_order_by = f"text <@> to_bm25query({text_param}, '{idx}') ASC"
             bm25_where_filter = ""
         else:  # native tsvector
             bm25_score_expr = f"ts_rank_cd(search_vector, to_tsquery('english', {text_param}))"
