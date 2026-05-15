@@ -170,6 +170,13 @@ class PostgreSQLDialect(SQLDialect):
             f" LIMIT {fetch_limit})"
         )
 
+    @staticmethod
+    def _qualified_index_name(table: str, index_name: str) -> str:
+        if "." in table:
+            schema = table.rsplit(".", 1)[0]
+            return f"{schema}.{index_name}"
+        return index_name
+
     def build_bm25_arm(
         self,
         *,
@@ -187,19 +194,20 @@ class PostgreSQLDialect(SQLDialect):
         bm25_min_score: float = 0.0,
         extra_where: str = "",
     ) -> str:
+        idx = self._qualified_index_name(table, "idx_memory_units_text_search")
         if text_search_extension == "vchord":
             # <&> returns the NEGATIVE BM25 score (lower = more relevant), negate
             # for a positive score where higher = more relevant.
-            bm25_score_expr = f"-(search_vector <&> to_bm25query('idx_memory_units_text_search', tokenize({text_param}, 'llmlingua2')))"
+            bm25_score_expr = f"-(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2')))"
             bm25_order_by = f"{bm25_score_expr} DESC"
             # Unlike native tsvector (which has a boolean `@@` match gate), the
             # VectorChord operator ranks *every* document, so a bare ORDER BY ...
             # LIMIT pads the result with zero-score, non-matching rows. Gate on the
             # score so only genuine term matches survive into fusion/reranking.
-            bm25_where_filter = f"AND -(search_vector <&> to_bm25query('idx_memory_units_text_search', tokenize({text_param}, 'llmlingua2'))) > {bm25_min_score:g}"
+            bm25_where_filter = f"AND -(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2'))) > {bm25_min_score:g}"
         elif text_search_extension == "pg_textsearch":
-            bm25_score_expr = f"-({text_param} <@> to_bm25query({text_param}, 'idx_memory_units_text_search'))"
-            bm25_order_by = f"text <@> to_bm25query({text_param}, 'idx_memory_units_text_search') ASC"
+            bm25_score_expr = f"-({text_param} <@> to_bm25query({text_param}, '{idx}'))"
+            bm25_order_by = f"text <@> to_bm25query({text_param}, '{idx}') ASC"
             bm25_where_filter = ""
         elif text_search_extension == "pgroonga":
             # &@~ accepts pgroonga's query syntax. Escape the bind parameter so
