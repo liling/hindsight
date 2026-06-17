@@ -37,13 +37,19 @@ const requestAwareFetch: typeof fetch = async (input, init) => {
 /**
  * Read the API key for the current request.
  * Uses next/headers() which is async in Next.js 16.
+ * Resolution order: middleware-injected x-api-key header → tenant-api-key
+ * httpOnly cookie (SaaS mode) → HINDSIGHT_CP_DATAPLANE_API_KEY env var.
  */
 async function getActiveApiKey(): Promise<string> {
   try {
-    const { headers } = await import("next/headers");
+    const { headers, cookies } = await import("next/headers");
     const headerList = await headers();
     const injected = headerList.get("x-api-key");
     if (injected) return injected;
+
+    const cookieList = await cookies();
+    const tenantKey = cookieList.get("tenant-api-key")?.value;
+    if (tenantKey) return tenantKey;
   } catch {
     // Not in a request context — fall through to env var
   }
