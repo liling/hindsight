@@ -104,15 +104,20 @@ async function handleSaasRequest(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
   }
 
-  // Inject tenant API key as request header so downstream API routes can use it
+  // Inject tenant API key as request header so downstream API routes can use it.
+  // For API routes, the override headers are applied directly. For page routes,
+  // delegate to intlMiddleware for locale rewrite; the tenant-api-key cookie is
+  // httpOnly so API routes can also read it directly via next/headers as fallback.
   const apiKey = request.cookies.get("tenant-api-key")?.value;
-  const requestHeaders = new Headers(request.headers);
-  if (apiKey) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    if (!apiKey) return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-api-key", apiKey);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+
+  // Page routes: run i18n middleware so /dashboard rewrites to /[locale]/dashboard
+  return intlMiddleware(request);
 }
 
 export const config = {
