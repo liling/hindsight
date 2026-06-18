@@ -25,7 +25,7 @@ export async function GET(
       dataplaneBankUrl(bankId, `/memories/${encodeURIComponent(memoryId)}`),
       {
         method: "GET",
-        headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
+        headers: await await getDataplaneHeaders({ "Content-Type": "application/json" }),
       }
     );
 
@@ -93,7 +93,7 @@ export async function PATCH(
       dataplaneBankUrl(bankId, `/memories/${encodeURIComponent(memoryId)}`),
       {
         method: "PATCH",
-        headers: getDataplaneHeaders({ "Content-Type": "application/json" }),
+        headers: await getDataplaneHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           text,
           context,
