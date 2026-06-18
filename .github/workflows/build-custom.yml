@@ -2,8 +2,6 @@ name: Build Images
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
@@ -53,21 +51,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract short SHA
-        id: sha
-        run: echo "SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-
       - name: Compute image tags
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
-          # master branch  -> latest + short sha (dev rolling)
-          # v1.2.3 tag     -> latest + 1.2.3 + 1.2 + 1 (semver rolling)
-          # v1.2.3-rc1 tag -> 1.2.3-rc1 (prerelease, no latest)
+          # v0.8.2 tag     -> 0.8.2 + 0.8 + latest
+          # v0.8.2-rc1 tag -> 0.8.2-rc1 (prerelease, no latest, no rolling)
+          # v1.0.0 tag     -> 1.0.0 + 1.0 + 1 + latest
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.sha.outputs.SHORT }},enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref_name, 'v0.') }}
