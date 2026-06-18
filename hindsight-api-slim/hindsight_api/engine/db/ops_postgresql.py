@@ -54,7 +54,7 @@ def pg_search_vector_expr(
     cols = [c for c in (text_col, context_col, signals_col) if c is not None]
     combined = " || ' ' || ".join(f"COALESCE({c}, '')" for c in cols)
     if config.text_search_extension == "vchord":
-        return f"tokenize({combined}, 'llmlingua2')::bm25_catalog.bm25vector"
+        return f"tokenizer_catalog.tokenize({combined}, 'llmlingua2')::bm25_catalog.bm25vector"
     if config.text_search_extension == "native" and native_inline:
         return f"to_tsvector('{config.text_search_extension_native_language}'::regconfig, {combined})"
     return None
