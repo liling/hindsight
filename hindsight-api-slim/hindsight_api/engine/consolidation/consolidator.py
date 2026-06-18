@@ -2330,7 +2330,7 @@ async def _create_observation_directly(
                 tags, event_date, occurred_start, occurred_end, mentioned_at, search_vector
             )
             VALUES ($1, $2, $3, 'observation', $4::vector, 1, $5, $6, $7, $8, $9, $10,
-                    tokenize($3, 'llmlingua2')::bm25_catalog.bm25vector)
+                    tokenizer_catalog.tokenize($3, 'llmlingua2')::bm25_catalog.bm25vector)
             RETURNING id
         """
     else:  # native, pg_textsearch, pgroonga, or pg_search

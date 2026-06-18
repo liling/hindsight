@@ -116,7 +116,7 @@ class PostgreSQLOps(DataAccessOps):
                     ),
                     observation_scopes_json,
                     text_signals,
-                    tokenize(
+                    tokenizer_catalog.tokenize(
                         COALESCE(text, '') || ' ' || COALESCE(context, '') || ' ' || COALESCE(text_signals, ''),
                         'llmlingua2'
                     )::bm25_catalog.bm25vector

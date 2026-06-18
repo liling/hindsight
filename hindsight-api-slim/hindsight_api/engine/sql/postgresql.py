@@ -45,14 +45,14 @@ class PostgreSQLDialect(SQLDialect):
     def text_search_score(self, col: str, query_param: str, *, index_name: str | None = None) -> str:
         if index_name:
             # VectorChord BM25
-            return f"-({col} <@> to_bm25query({query_param}, '{index_name}'))"
+            return f"-({col} <@> bm25_catalog.to_bm25query({query_param}, '{index_name}'))"
         # Fallback to tsvector
         return f"ts_rank_cd({col}, to_tsquery({query_param}))"
 
     def text_search_order(self, col: str, query_param: str, *, index_name: str | None = None) -> str:
         if index_name:
             # VectorChord BM25 — lower distance = better, so ASC
-            return f"{col} <@> to_bm25query({query_param}, '{index_name}') ASC"
+            return f"{col} <@> bm25_catalog.to_bm25query({query_param}, '{index_name}') ASC"
         return f"ts_rank_cd({col}, to_tsquery({query_param})) DESC"
 
     # -- Fuzzy string matching -------------------------------------------
@@ -198,16 +198,16 @@ class PostgreSQLDialect(SQLDialect):
         if text_search_extension == "vchord":
             # <&> returns the NEGATIVE BM25 score (lower = more relevant), negate
             # for a positive score where higher = more relevant.
-            bm25_score_expr = f"-(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2')))"
+            bm25_score_expr = f"-(search_vector <&> bm25_catalog.to_bm25query('{idx}', tokenizer_catalog.tokenize({text_param}, 'llmlingua2')))"
             bm25_order_by = f"{bm25_score_expr} DESC"
             # Unlike native tsvector (which has a boolean `@@` match gate), the
             # VectorChord operator ranks *every* document, so a bare ORDER BY ...
             # LIMIT pads the result with zero-score, non-matching rows. Gate on the
             # score so only genuine term matches survive into fusion/reranking.
-            bm25_where_filter = f"AND -(search_vector <&> to_bm25query('{idx}', tokenize({text_param}, 'llmlingua2'))) > {bm25_min_score:g}"
+            bm25_where_filter = f"AND -(search_vector <&> bm25_catalog.to_bm25query('{idx}', tokenizer_catalog.tokenize({text_param}, 'llmlingua2'))) > {bm25_min_score:g}"
         elif text_search_extension == "pg_textsearch":
-            bm25_score_expr = f"-({text_param} <@> to_bm25query({text_param}, '{idx}'))"
-            bm25_order_by = f"text <@> to_bm25query({text_param}, '{idx}') ASC"
+            bm25_score_expr = f"-({text_param} <@> bm25_catalog.to_bm25query({text_param}, '{idx}'))"
+            bm25_order_by = f"text <@> bm25_catalog.to_bm25query({text_param}, '{idx}') ASC"
             bm25_where_filter = ""
         elif text_search_extension == "pgroonga":
             # &@~ accepts pgroonga's query syntax. Escape the bind parameter so
