@@ -22,18 +22,18 @@ export async function POST(request: NextRequest) {
   }
 
   if (!otp) {
-    return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
+    return NextResponse.redirect(new URL("/hindsight/dashboard", saasHostUrl), 303);
   }
 
   try {
-    const resp = await fetch(`${managerApiUrl}/auth/exchange-otp`, {
+    const resp = await fetch(`${managerApiUrl}/hindsight/auth/exchange-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ otp }),
     });
 
     if (!resp.ok) {
-      return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
+      return NextResponse.redirect(new URL("/hindsight/dashboard", saasHostUrl), 303);
     }
 
     const data = await resp.json();
@@ -58,6 +58,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     console.error("[SSO] OTP exchange failed:", err);
-    return NextResponse.redirect(new URL("/dashboard", saasHostUrl), 303);
+    return NextResponse.redirect(new URL("/hindsight/dashboard", saasHostUrl), 303);
   }
 }

@@ -101,7 +101,7 @@ async function handleSaasRequest(request: NextRequest) {
   const jwt = request.cookies.get("session-jwt");
   if (!jwt) {
     const saasHostUrl = process.env.HINDSIGHT_CP_SAAS_HOST_URL || "http://localhost:3000";
-    return NextResponse.redirect(new URL("/dashboard", saasHostUrl));
+    return NextResponse.redirect(new URL("/hindsight/dashboard", saasHostUrl));
   }
 
   // Inject tenant API key as request header so downstream API routes can use it.
