@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const COOKIE_MAX_AGE = 900;
+const COOKIE_MAX_AGE = 12 * 60 * 60;
 
 export async function POST(request: NextRequest) {
   const managerApiUrl = process.env.HINDSIGHT_CP_MANAGER_API_URL || "http://localhost:8001";
