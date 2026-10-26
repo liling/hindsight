@@ -7,8 +7,8 @@ describe("dataplane User-Agent", () => {
     expect(USER_AGENT).toBe(`hindsight-control-plane/${version}`);
   });
 
-  it("is sent on direct fetches and by the low-level client", () => {
-    expect(getDataplaneHeaders({ "Content-Type": "application/json" })).toMatchObject({
+  it("is sent on direct fetches and by the low-level client", async () => {
+    expect(await getDataplaneHeaders({ "Content-Type": "application/json" })).toMatchObject({
       "User-Agent": USER_AGENT,
       "Content-Type": "application/json",
     });

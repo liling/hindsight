@@ -72,6 +72,8 @@ export async function getDataplaneHeaders(
 
 /**
  * Build a dataplane URL for a bank-scoped endpoint with the bank id properly encoded.
+ * Bank ids may contain `:`, `/`, `%`, etc. (e.g. openclaw `agent::channel::user`),
+ * which must be percent-encoded before being interpolated into a URL path.
  */
 export function dataplaneBankUrl(bankId: string, suffix = ""): string {
   return `${DATAPLANE_URL}/v1/default/banks/${encodeURIComponent(bankId)}${suffix}`;
@@ -88,6 +90,7 @@ export const hindsightClient = new HindsightClient({
 export const lowLevelClient = createClient(
   createConfig({
     baseUrl: DATAPLANE_URL,
+    headers: new Headers({ "User-Agent": USER_AGENT }),
     fetch: requestAwareFetch,
   })
 );
