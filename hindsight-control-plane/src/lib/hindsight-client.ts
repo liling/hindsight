@@ -1,7 +1,7 @@
 /**
- * Shared Hindsight API client instance for the control plane.
- * In standalone mode: configured via env vars (module-level singletons).
- * In SaaS mode: middleware injects x-api-key header; a custom fetch reads it per-request.
+ * Shared Hindsight API client helpers for the control plane.
+ * In standalone mode: configured via env vars.
+ * In SaaS mode: middleware injects x-api-key; a custom fetch reads it per-request.
  */
 
 import {
@@ -79,12 +79,16 @@ export function dataplaneBankUrl(bankId: string, suffix = ""): string {
   return `${DATAPLANE_URL}/v1/default/banks/${encodeURIComponent(bankId)}${suffix}`;
 }
 
-// High-level client
-export const hindsightClient = new HindsightClient({
-  baseUrl: DATAPLANE_URL,
-  apiKey: DATAPLANE_API_KEY || undefined,
-  userAgent: USER_AGENT,
-});
+// High-level client. HindsightClient bakes the API key into its headers at
+// construction time and takes no custom fetch, so it is built per request to
+// pick up the SaaS tenant key injected by middleware (or the env key).
+export async function getHindsightClient(): Promise<HindsightClient> {
+  return new HindsightClient({
+    baseUrl: DATAPLANE_URL,
+    apiKey: (await getActiveApiKey()) || undefined,
+    userAgent: USER_AGENT,
+  });
+}
 
 // Low-level SDK client with request-aware fetch
 export const lowLevelClient = createClient(
