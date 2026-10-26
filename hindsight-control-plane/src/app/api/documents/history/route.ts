@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         `/documents/${encodeURIComponent(documentId)}/history?limit=${limit}&offset=${offset}`
       ),
       {
-        headers: getDataplaneHeaders(),
+        headers: await getDataplaneHeaders(),
       }
     );
 
