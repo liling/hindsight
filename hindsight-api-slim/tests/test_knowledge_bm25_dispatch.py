@@ -29,7 +29,7 @@ def _cfg(ext: str) -> SimpleNamespace:
 
 
 def _arm(ext: str) -> KnowledgeBm25Arm:
-    return knowledge_bm25_arm(ext, table_alias="mm", text_param="$3")
+    return knowledge_bm25_arm(ext, table_alias="mm", text_param="$3", table="public.mental_models")
 
 
 def test_oracle_uses_oracle_text_contains_and_score():
@@ -103,7 +103,7 @@ def test_pg_textsearch_ranks_content_by_bm25_distance():
     arm = _arm("pg_textsearch")
     # `<@>` is a distance (lower = closer), so the arm orders ASC off the raw
     # distance and lets the index drive the ordering.
-    assert arm.order_by == "mm.content <@> to_bm25query($3, 'idx_mental_models_text_search') ASC"
+    assert arm.order_by == "mm.content <@> bm25_catalog.to_bm25query($3, 'public.idx_mental_models_text_search') ASC"
     # It ranks every row, so there is no boolean match gate.
     assert arm.match_filter == ""
     assert "ts_rank_cd" not in arm.order_by
@@ -114,10 +114,26 @@ def test_vchord_ranks_over_bm25vector_search_vector():
     # Negated <&> distance over the bm25vector column and the mental_models index,
     # gated on a positive score — the same operator build_bm25_arm uses.
     assert arm.order_by == (
-        "-(mm.search_vector <&> to_bm25query('idx_mental_models_text_search', tokenize($3, 'llmlingua2'))) DESC"
+        "-(mm.search_vector <&> bm25_catalog.to_bm25query('public.idx_mental_models_text_search', "
+        "tokenizer_catalog.tokenize($3, 'llmlingua2'))) DESC"
     )
     assert arm.match_filter.endswith(" > 0")
     assert "ts_rank_cd" not in arm.order_by
+
+
+def test_tenant_schema_qualifies_index_and_extension_calls():
+    """A tenant schema must be carried into the index name and the extension calls,
+    so knowledge search does not depend on the connection's search_path."""
+    table = '"tenant_1".mental_models'
+    vchord = knowledge_bm25_arm("vchord", table_alias="mm", text_param="$3", table=table)
+    assert (
+        "bm25_catalog.to_bm25query('\"tenant_1\".idx_mental_models_text_search', "
+        "tokenizer_catalog.tokenize($3, 'llmlingua2'))" in vchord.order_by
+    )
+    pg_textsearch = knowledge_bm25_arm("pg_textsearch", table_alias="mm", text_param="$3", table=table)
+    assert pg_textsearch.order_by == (
+        "mm.content <@> bm25_catalog.to_bm25query($3, '\"tenant_1\".idx_mental_models_text_search') ASC"
+    )
 
 
 def test_text_param_and_alias_are_threaded_through():
@@ -142,7 +158,9 @@ def test_mm_write_tokenizes_only_for_vchord():
     vchord = pg_search_vector_expr(
         _cfg("vchord"), text_col="$3", context_col="$5", signals_col=None, native_inline=False
     )
-    assert vchord == "tokenize(COALESCE($3, '') || ' ' || COALESCE($5, ''), 'llmlingua2')::bm25_catalog.bm25vector"
+    assert vchord == (
+        "tokenizer_catalog.tokenize(COALESCE($3, '') || ' ' || COALESCE($5, ''), 'llmlingua2')::bm25_catalog.bm25vector"
+    )
 
 
 def test_memory_units_default_expr_is_unchanged():
@@ -152,8 +170,8 @@ def test_memory_units_default_expr_is_unchanged():
         "COALESCE(text, '') || ' ' || COALESCE(context, '') || ' ' || COALESCE(text_signals, ''))"
     )
     assert pg_search_vector_expr(_cfg("vchord")) == (
-        "tokenize(COALESCE(text, '') || ' ' || COALESCE(context, '') || ' ' || COALESCE(text_signals, ''), "
-        "'llmlingua2')::bm25_catalog.bm25vector"
+        "tokenizer_catalog.tokenize(COALESCE(text, '') || ' ' || COALESCE(context, '') || ' ' "
+        "|| COALESCE(text_signals, ''), 'llmlingua2')::bm25_catalog.bm25vector"
     )
     assert pg_search_vector_expr(_cfg("pg_search")) is None
 

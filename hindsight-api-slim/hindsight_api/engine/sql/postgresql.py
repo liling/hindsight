@@ -68,6 +68,7 @@ def knowledge_bm25_arm(
     *,
     table_alias: str,
     text_param: str,
+    table: str = "mental_models",
     pg_search_function_schema: str = "paradedb",
     pg_search_tokenizer: str = "",
     max_query_terms: int = 0,
@@ -84,6 +85,10 @@ def knowledge_bm25_arm(
 
     ``table_alias`` is the alias the ``mental_models`` row carries in the query
     (``mm``); ``text_param`` is the bind placeholder holding the query text.
+    ``table`` is the (schema-qualified) ``mental_models`` name, used to qualify
+    the BM25 index and extension calls so they resolve without relying on the
+    session ``search_path`` — the same reason ``build_bm25_arm`` qualifies its
+    index name.
 
     For the ``native`` backend, ``text_param`` must be bound to the output of
     :meth:`prepare_bm25_text` (disjunctive ``" | "`` tokens). ``websearch_to_tsquery``
@@ -111,6 +116,8 @@ def knowledge_bm25_arm(
             match_filter=f"AND CONTAINS({a}.content, REPLACE({p}, ' OR ', ' ACCUM '), 1) > 0",
         )
 
+    idx = PostgreSQLDialect._qualified_index_name(table, "idx_mental_models_text_search")
+
     if text_search_extension == "vchord":
         # VectorChord BM25 over the bm25vector search_vector column, identical to
         # build_bm25_arm's vchord form. This only returns rows because the
@@ -118,7 +125,7 @@ def knowledge_bm25_arm(
         # (pg_search_vector_expr, native_inline=False) the same way memory_units
         # does — the column is plain, not generated, so it must be filled on write.
         # <&> is the NEGATIVE score (lower = more relevant); negate it.
-        expr = f"-({a}.search_vector <&> to_bm25query('idx_mental_models_text_search', tokenize({p}, 'llmlingua2')))"
+        expr = f"-({a}.search_vector <&> bm25_catalog.to_bm25query('{idx}', tokenizer_catalog.tokenize({p}, 'llmlingua2')))"
         return KnowledgeBm25Arm(
             order_by=f"{expr} DESC",
             # Gate on a positive score: the operator ranks every row, so a bare
@@ -142,7 +149,7 @@ def knowledge_bm25_arm(
         # Timescale pg_textsearch: BM25 index over the `content` column. `<@>` is a
         # distance (lower = closer), so negate it for a higher-is-better score and
         # order by the raw ASC distance so the index drives the ordering.
-        distance = f"{a}.content <@> to_bm25query({p}, 'idx_mental_models_text_search')"
+        distance = f"{a}.content <@> bm25_catalog.to_bm25query({p}, '{idx}')"
         return KnowledgeBm25Arm(
             order_by=f"{distance} ASC",
             match_filter="",
