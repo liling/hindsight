@@ -18,7 +18,7 @@ from hindsight_api.engine.memories.pg import admin, consolidation
 _BOUNDS = _TemporalBounds(event_date=None, occurred_start=None, occurred_end=None, mentioned_at=None)
 
 EXPECTED = {
-    "vchord": "search_vector = tokenize(COALESCE($1, ''), 'llmlingua2')::bm25_catalog.bm25vector",
+    "vchord": ("search_vector = tokenizer_catalog.tokenize(COALESCE($1, ''), 'llmlingua2')::bm25_catalog.bm25vector"),
     "native": "search_vector = to_tsvector('english'::regconfig, COALESCE($1, ''))",
 }
 
@@ -157,7 +157,9 @@ async def test_repair_retokenizes_every_observation_under_vchord(backend):
     n, conn = await _repair(dry_run=False)
     assert n == 7
     (q,) = conn.queries
-    assert "SET search_vector = tokenize(COALESCE(text, ''), 'llmlingua2')::bm25_catalog.bm25vector" in q
+    assert (
+        "SET search_vector = tokenizer_catalog.tokenize(COALESCE(text, ''), 'llmlingua2')::bm25_catalog.bm25vector" in q
+    )
     assert "fact_type = 'observation'" in q
 
     n, conn = await _repair(dry_run=True)

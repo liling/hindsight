@@ -271,7 +271,8 @@ class TestPostgreSQLDialect:
             text_search_extension="vchord",
         )
         assert (
-            "-(search_vector <&> to_bm25query('idx_memory_units_text_search', tokenize($4, 'llmlingua2'))) > 0" in arm
+            "-(search_vector <&> bm25_catalog.to_bm25query('idx_memory_units_text_search', "
+            "tokenizer_catalog.tokenize($4, 'llmlingua2'))) > 0" in arm
         )
 
     def test_build_bm25_arm_vchord_honors_custom_min_score(self, d):
@@ -301,7 +302,7 @@ class TestPostgreSQLDialect:
             text_param="$4",
             text_search_extension="pg_textsearch",
         )
-        expected_distance = "text <@> to_bm25query($4, 'idx_memory_units_text_search')"
+        expected_distance = "text <@> bm25_catalog.to_bm25query($4, 'schema.idx_memory_units_text_search')"
         assert f"-({expected_distance}) AS bm25_score" in arm
         assert f"ORDER BY {expected_distance} ASC" in arm
         assert "$4 <@>" not in arm
